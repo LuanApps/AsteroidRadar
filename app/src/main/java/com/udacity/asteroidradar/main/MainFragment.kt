@@ -9,19 +9,28 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
+import androidx.work.*
 import com.udacity.asteroidradar.R
+import com.udacity.asteroidradar.database.AsteroidDatabase
 import com.udacity.asteroidradar.databinding.FragmentMainBinding
 import com.udacity.asteroidradar.util.AsteroidAdapter
+import java.util.concurrent.TimeUnit
 
 class MainFragment : Fragment() {
 
-    private val viewModel: MainViewModel by lazy {
-        ViewModelProvider(this).get(MainViewModel::class.java)
-    }
+    private lateinit var viewModel: MainViewModel
+
     private lateinit var asteroidAdapter: AsteroidAdapter
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View? {
+
+        val application = requireNotNull(this.activity).application
+        val dataSource = AsteroidDatabase.getInstance(application).asteroidDatabaseDao
+        val viewModelFactory = MainViewModelFactory(application, dataSource)
+        viewModel = ViewModelProvider(this, viewModelFactory)[MainViewModel::class.java]
+
+
         val binding = FragmentMainBinding.inflate(inflater)
         binding.lifecycleOwner = this
 
@@ -36,7 +45,7 @@ class MainFragment : Fragment() {
                 this.findNavController().navigate(MainFragmentDirections
                     .actionShowDetail(asteroid)
                 )
-                viewModel.onAsteroidyNavigated()
+                viewModel.onAsteroidNavigated()
             }
         })
 
@@ -54,9 +63,22 @@ class MainFragment : Fragment() {
             asteroidAdapter.submitList(asteroids)
         }
 
-        // Load asteroids from the ViewModel
-        viewModel.refreshAsteroids()
+        //Worker to download and save today asteroid into database one time per day.
 
+        val constraints = Constraints.Builder()
+            .setRequiresCharging(true)
+            .setRequiredNetworkType(NetworkType.UNMETERED)
+            .build()
+
+        val repeatingRequest = PeriodicWorkRequestBuilder<RefreshAsteroidsWorker>(1, TimeUnit.DAYS)
+            .setConstraints(constraints)
+            .build()
+
+        WorkManager.getInstance(requireContext()).enqueueUniquePeriodicWork(
+            "RefreshAsteroidsWorker",
+            ExistingPeriodicWorkPolicy.KEEP,
+            repeatingRequest
+        )
     }
 
     private fun setupMenu() {

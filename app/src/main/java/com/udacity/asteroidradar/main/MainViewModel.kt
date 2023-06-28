@@ -1,17 +1,25 @@
 package com.udacity.asteroidradar.main
 
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
+import android.app.Application
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import androidx.lifecycle.*
 import com.udacity.asteroidradar.api.NasaApi
 import com.udacity.asteroidradar.api.NasaApiRepository
+import com.udacity.asteroidradar.database.AsteroidDatabaseDao
 import com.udacity.asteroidradar.model.Asteroid
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.*
 
-class MainViewModel : ViewModel() {
+class MainViewModel(
+    private val database: AsteroidDatabaseDao,
+    application: Application
+) : AndroidViewModel(application) {
+
     private val _asteroids = MutableLiveData<List<Asteroid>>()
     val asteroids: LiveData<List<Asteroid>> get() = _asteroids
 
@@ -20,46 +28,66 @@ class MainViewModel : ViewModel() {
 
     private val nasaApiRepository = NasaApiRepository(NasaApi.nasaApiService)
 
-
     init {
-        // Initialize the list of asteroids (replace with your own logic)
-//        val fakeAsteroids = createFakeAsteroids()
-//        _asteroids.value = fakeAsteroids
-
-        fetchAsteroids(getCurrentDate(), getEndDate())
-    }
-
-    private fun createFakeAsteroids(): List<Asteroid> {
-        // Replace this with your own logic to create fake asteroids
-        return listOf(
-            Asteroid(1, "Asteroid 1", "2023-06-28", 5.0, 10.0, 10000.0, 500000.0, false),
-            Asteroid(2, "Asteroid 2", "2023-06-29", 4.0, 8.0, 15000.0, 600000.0, true),
-            Asteroid(3, "Asteroid 3", "2023-06-30", 6.0, 12.0, 8000.0, 400000.0, false)
-        )
+        viewModelScope.launch {
+            // Refresh asteroids on initialization
+            refreshAsteroids()
+        }
     }
 
     fun refreshAsteroids() {
-        fetchAsteroids(getCurrentDate(), getEndDate())
-    }
-
-    fun onAsteroidClicked(asteroid: Asteroid){
-        _navigateToDetails.value = asteroid
-    }
-
-    fun onAsteroidyNavigated() {
-        _navigateToDetails.value = null
-    }
-
-    private fun fetchAsteroids(startDate: String, endDate: String) {
         viewModelScope.launch {
             try {
-                val asteroidList = nasaApiRepository.getAsteroids(startDate, endDate)
-                _asteroids.value = asteroidList
+                // Check network connectivity
+                if (isNetworkConnected()) {
+                    val startDate = getCurrentDate()
+                    val endDate = getEndDate()
+                    val asteroidList = nasaApiRepository.getAsteroids(startDate, endDate)
+
+                    // Save asteroids to the local database
+                    saveAsteroidsToLocalDatabase(asteroidList)
+                }
+
+                // Fetch and display the asteroids from the database
+                fetchAsteroidsFromLocalDatabase()
+
             } catch (e: Exception) {
                 // Handle exception
                 _asteroids.value = emptyList()
             }
         }
+    }
+
+    private fun isNetworkConnected(): Boolean {
+        val connectivityManager = getApplication<Application>().getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+
+        // Check if the network capabilities include internet connectivity
+        val network = connectivityManager.activeNetwork
+        val networkCapabilities = connectivityManager.getNetworkCapabilities(network)
+        return networkCapabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
+    }
+
+    private suspend fun saveAsteroidsToLocalDatabase(asteroidList: List<Asteroid>) {
+        withContext(Dispatchers.IO) {
+            database.insertAll(asteroidList)
+        }
+    }
+
+    private fun fetchAsteroidsFromLocalDatabase() {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                val asteroidsFromDb = database.getSortedAsteroids().sortedBy { it.closeApproachDate }
+                _asteroids.postValue(asteroidsFromDb)
+            }
+        }
+    }
+
+    fun onAsteroidClicked(asteroid: Asteroid) {
+        _navigateToDetails.value = asteroid
+    }
+
+    fun onAsteroidNavigated() {
+        _navigateToDetails.value = null
     }
 
     private fun getCurrentDate(): String {
