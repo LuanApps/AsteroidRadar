@@ -10,8 +10,8 @@ import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
 import androidx.work.*
+import com.squareup.picasso.Picasso
 import com.udacity.asteroidradar.R
-import com.udacity.asteroidradar.database.AsteroidDatabase
 import com.udacity.asteroidradar.databinding.FragmentMainBinding
 import com.udacity.asteroidradar.util.AsteroidAdapter
 import java.util.concurrent.TimeUnit
@@ -22,6 +22,8 @@ class MainFragment : Fragment() {
 
     private lateinit var asteroidAdapter: AsteroidAdapter
 
+    private lateinit var binding: FragmentMainBinding
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View? {
 
@@ -30,7 +32,7 @@ class MainFragment : Fragment() {
         viewModel = ViewModelProvider(this, viewModelFactory)[MainViewModel::class.java]
 
 
-        val binding = FragmentMainBinding.inflate(inflater)
+        binding = FragmentMainBinding.inflate(inflater)
         binding.lifecycleOwner = this
 
         binding.viewModel = viewModel
@@ -62,6 +64,20 @@ class MainFragment : Fragment() {
             asteroidAdapter.submitList(asteroids)
         }
 
+        // update the imageView with Picasso Library in the ImageOfTheDay view
+        val imageView = binding.activityMainImageOfTheDay
+        val imageTitle = binding.imageTitle
+        viewModel.pictureOfDay.observe(viewLifecycleOwner) { picture ->
+            picture?.let {
+                Picasso.get()
+                    .load(picture.url)
+                    .placeholder(R.drawable.placeholder_picture_of_day)
+                    .error(R.drawable.placeholder_picture_of_day)
+                    .into(imageView)
+            }
+            imageTitle.text = picture?.title ?: "No Image For Today"
+        }
+
         //Worker to download and save today asteroid into database one time per day.
 
         val constraints = Constraints.Builder()
@@ -90,8 +106,18 @@ class MainFragment : Fragment() {
             }
 
             override fun onMenuItemSelected(menuItem: MenuItem): Boolean {
-                return true
-
+                return when (menuItem.itemId) {
+                    R.id.show_next_week_asteroids -> {
+                        true
+                    }
+                    R.id.show_today_asteroids -> {
+                        true
+                    }
+                    R.id.show_saved_asteroids -> {
+                        true
+                    }
+                    else -> {true}
+                }
             }
         }, viewLifecycleOwner, Lifecycle.State.RESUMED)
     }

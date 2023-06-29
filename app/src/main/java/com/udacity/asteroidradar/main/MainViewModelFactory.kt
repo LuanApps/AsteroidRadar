@@ -3,7 +3,6 @@ package com.udacity.asteroidradar.main
 import android.app.Application
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import com.udacity.asteroidradar.database.AsteroidDatabaseDao
 
 class MainViewModelFactory(
     private val application: Application

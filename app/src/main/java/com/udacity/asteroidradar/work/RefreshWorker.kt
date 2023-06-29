@@ -3,8 +3,7 @@ package com.udacity.asteroidradar.main
 import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
-import com.bumptech.glide.load.HttpException
-import com.udacity.asteroidradar.api.NasaApiRepository
+import com.udacity.asteroidradar.repository.NasaApiRepository
 import com.udacity.asteroidradar.database.AsteroidDatabase
 
 class RefreshAsteroidsWorker(appContext: Context, params: WorkerParameters):
@@ -19,6 +18,7 @@ class RefreshAsteroidsWorker(appContext: Context, params: WorkerParameters):
         val repository = NasaApiRepository(database)
         return try {
             repository.refreshAsteroids()
+            repository.refreshPicture()
             Result.success()
         } catch (e: retrofit2.HttpException) {
             Result.retry()

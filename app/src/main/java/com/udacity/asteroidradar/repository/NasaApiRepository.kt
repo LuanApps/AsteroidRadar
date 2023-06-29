@@ -1,8 +1,9 @@
-package com.udacity.asteroidradar.api
+package com.udacity.asteroidradar.repository
 
 import android.util.Log
 import androidx.lifecycle.LiveData
-import androidx.lifecycle.MediatorLiveData
+import com.udacity.asteroidradar.api.NasaApi
+import com.udacity.asteroidradar.api.parseAsteroidsJsonResult
 import com.udacity.asteroidradar.database.AsteroidDatabase
 import com.udacity.asteroidradar.util.Constants
 import com.udacity.asteroidradar.model.Asteroid
@@ -15,7 +16,8 @@ import java.util.*
 
 class NasaApiRepository(private val database: AsteroidDatabase) {
 
-    val asteroids: LiveData<List<Asteroid>> = database.asteroidDatabaseDao.getAsteroids()
+    val asteroids: LiveData<List<Asteroid>> = database.asteroidDatabaseDao.getSortedAsteroids()
+    val pictureOfDay: LiveData<PictureOfDay> = database.pictureDatabaseDao.getLastPicture()
 
     suspend fun refreshAsteroids() {
         withContext(Dispatchers.IO) {
@@ -32,6 +34,36 @@ class NasaApiRepository(private val database: AsteroidDatabase) {
                 database.asteroidDatabaseDao.insertAll(asteroidsList)
             } catch (e: Exception) {
                 Log.e("repository", "Failed to refresh the asteroid data: $e")
+            }
+        }
+    }
+
+    suspend fun refreshPicture() {
+        withContext(Dispatchers.IO) {
+            try {
+                val apiKey = Constants.APY_KEY
+                val picture = NasaApi.nasaApiService.getPictureOfDay(apiKey)
+                picture.let {
+                    database.pictureDatabaseDao.insert(it)
+                }
+            } catch (e: Exception) {
+                Log.e("repository", "Failed to refresh the picture of the day: $e")
+            }
+        }
+    }
+
+    suspend fun refreshPictureWithFake() {
+        withContext(Dispatchers.IO) {
+            try {
+                val fakePicture = PictureOfDay(
+                    id = 1,
+                    mediaType = "image",
+                    title = "Fake Picture",
+                    url = "https://apod.nasa.gov/apod/image/2001/STSCI-H-p2006a-h-1024x614.jpg"
+                )
+                database.pictureDatabaseDao.insert(fakePicture)
+            } catch (e: Exception) {
+                Log.e("repository", "Failed to refresh the picture of the day: $e")
             }
         }
     }
