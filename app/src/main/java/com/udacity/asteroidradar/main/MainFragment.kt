@@ -26,8 +26,7 @@ class MainFragment : Fragment() {
                               savedInstanceState: Bundle?): View? {
 
         val application = requireNotNull(this.activity).application
-        val dataSource = AsteroidDatabase.getInstance(application).asteroidDatabaseDao
-        val viewModelFactory = MainViewModelFactory(application, dataSource)
+        val viewModelFactory = MainViewModelFactory(application)
         viewModel = ViewModelProvider(this, viewModelFactory)[MainViewModel::class.java]
 
 
