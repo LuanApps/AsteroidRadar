@@ -5,6 +5,7 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import com.udacity.asteroidradar.bindAsteroidStatusImage
 import com.udacity.asteroidradar.model.Asteroid
 import com.udacity.asteroidradar.databinding.AsteroidListItemBinding
 
@@ -25,6 +26,8 @@ class AsteroidAdapter(val clickListener: AsteroidListener) : ListAdapter<Asteroi
         fun bind(asteroid: Asteroid, clickListener: AsteroidListener) {
             binding.asteroid = asteroid
             binding.clickListener = clickListener
+            bindAsteroidStatusImage(binding.imageDanger, asteroid.isPotentiallyHazardous)
+
             binding.executePendingBindings()
         }
 

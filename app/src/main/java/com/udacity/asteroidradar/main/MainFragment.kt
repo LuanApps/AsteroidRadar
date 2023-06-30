@@ -75,7 +75,8 @@ class MainFragment : Fragment() {
                     .error(R.drawable.placeholder_picture_of_day)
                     .into(imageView)
             }
-            imageTitle.text = picture?.title ?: "No Image For Today"
+            imageTitle.text = picture?.title ?: "No Picture For Today"
+            imageView.contentDescription = "Picture of the day: ${picture?.title ?: "No Picture For Today"}"
         }
 
         //Worker to download and save today asteroid into database one time per day.

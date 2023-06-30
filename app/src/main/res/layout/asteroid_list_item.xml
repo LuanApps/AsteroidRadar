@@ -27,12 +27,14 @@
             android:layout_marginTop="8dp"
             android:layout_marginEnd="16dp"
             android:text="@{asteroid.codename}"
+            android:textColor="@android:color/white"
             android:textSize="18sp"
             android:textStyle="bold"
-            android:textColor="@android:color/white"
-            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/imageDanger"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintTop_toTopOf="parent"
+            tools:text="Asteroid Name"
+            android:hint="@string/asteroid_name_hint"/>
 
         <TextView
             android:id="@+id/asteroid_date_textview"
@@ -46,9 +48,22 @@
             android:textColor="@android:color/white"
             android:textSize="14sp"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/imageDanger"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/asteroid_name_textview" />
+            app:layout_constraintTop_toBottomOf="@+id/asteroid_name_textview"
+            tools:text="Asteroid Date"
+            android:hint="@string/asteroid_date_hint"/>
+
+        <ImageView
+            android:id="@+id/imageDanger"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="16dp"
+            app:layout_constraintBottom_toBottomOf="@+id/asteroid_date_textview"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/asteroid_name_textview"
+            app:srcCompat="@drawable/ic_status_normal"
+            android:contentDescription="@{asteroid.isPotentiallyHazardous ? @string/asteroid_hazardous : @string/asteroid_not_hazardous}"/>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </layout>
