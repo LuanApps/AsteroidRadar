@@ -17,6 +17,7 @@ android {
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField "String", "API_KEY", "\"" + getApiKey() + "\""
     }
     buildTypes {
         release {
@@ -34,6 +35,17 @@ android {
     kotlinOptions {
         jvmTarget = JavaVersion.VERSION_1_8.toString()
     }
+}
+
+def getApiKey() {
+    Properties properties = new Properties()
+    properties.load(project.rootProject.file('local.properties').newDataInputStream())
+
+    String apiKey = properties.getProperty("API_KEY")
+    if (apiKey == null) {
+        throw new GradleException("API_KEY not found in local.properties!")
+    }
+    return apiKey
 }
 
 dependencies {

@@ -2,6 +2,7 @@ package com.udacity.asteroidradar.repository
 
 import android.util.Log
 import androidx.lifecycle.LiveData
+import com.udacity.asteroidradar.BuildConfig
 import com.udacity.asteroidradar.api.NasaApi
 import com.udacity.asteroidradar.api.parseAsteroidsJsonResult
 import com.udacity.asteroidradar.database.AsteroidDatabase
@@ -25,7 +26,7 @@ class NasaApiRepository(private val database: AsteroidDatabase) {
         withContext(Dispatchers.IO) {
             try {
 
-                val apiKey = Constants.APY_KEY
+                val apiKey = BuildConfig.API_KEY
                 val response = NasaApi.nasaApiService.getAsteroids(getCurrentDate(), getEndDate(getCurrentDate(), Constants.DEFAULT_END_DATE_DAYS), apiKey)
                 val jsonString = response.string()
                 val jsonObject = JSONObject(jsonString)
@@ -43,13 +44,13 @@ class NasaApiRepository(private val database: AsteroidDatabase) {
     suspend fun refreshNextWeekAsteroids() {
         withContext(Dispatchers.IO) {
             try {
-                val apiKey = Constants.APY_KEY
+                val apiKey = BuildConfig.API_KEY
                 val response = NasaApi.nasaApiService.getAsteroids(getTomorrowDate(), getEndDate(getTomorrowDate(), Constants.DEFAULT_END_DATE_DAYS), apiKey)
                 val jsonString = response.string()
                 val jsonObject = JSONObject(jsonString)
                 val asteroidsList = parseAsteroidsJsonResult(jsonObject)
                 if(asteroidsList.size > 0){
-                    database.asteroidDatabaseDao.clear()
+                    database.asteroidDatabaseDao.clearExceptToday()
                 }
                 database.asteroidDatabaseDao.insertAll(asteroidsList)
             } catch (e: Exception) {
@@ -61,7 +62,7 @@ class NasaApiRepository(private val database: AsteroidDatabase) {
     suspend fun refreshPicture() {
         withContext(Dispatchers.IO) {
             try {
-                val apiKey = Constants.APY_KEY
+                val apiKey = BuildConfig.API_KEY
                 val picture = NasaApi.nasaApiService.getPictureOfDay(apiKey)
                 picture.let {
                     database.pictureDatabaseDao.insert(it)

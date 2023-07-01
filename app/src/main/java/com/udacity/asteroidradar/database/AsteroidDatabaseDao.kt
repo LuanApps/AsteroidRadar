@@ -10,6 +10,9 @@ interface AsteroidDatabaseDao {
     @Query("DELETE FROM asteroid_table")
     fun clear()
 
+    @Query("DELETE FROM asteroid_table WHERE closeApproachDate > date('now')")
+    fun clearExceptToday()
+
     @Query("SELECT * FROM asteroid_table WHERE closeApproachDate >= date('now') ORDER BY closeApproachDate ASC")
     fun getSavedAsteroids(): LiveData<List<Asteroid>>
 
