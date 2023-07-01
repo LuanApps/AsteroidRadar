@@ -17,7 +17,7 @@ class RefreshAsteroidsWorker(appContext: Context, params: WorkerParameters):
         val database = AsteroidDatabase.getInstance(applicationContext)
         val repository = NasaApiRepository(database)
         return try {
-            repository.refreshAsteroids()
+            repository.refreshNextWeekAsteroids()
             repository.refreshPicture()
             Result.success()
         } catch (e: retrofit2.HttpException) {

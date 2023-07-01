@@ -15,7 +15,16 @@ class MainViewModel(
     private val database = AsteroidDatabase.getInstance(application)
     private val repository = NasaApiRepository(database)
 
-    val asteroids: LiveData<List<Asteroid>> = repository.asteroids
+    private val _selectedOption = MutableLiveData<Options>()
+
+    val asteroids: LiveData<List<Asteroid>> = _selectedOption.switchMap { option ->
+        when (option) {
+            Options.TODAY -> repository.todayAsteroids
+            Options.SAVED -> repository.asteroids
+            Options.NEXT_WEEK -> repository.nextWeekAsteroids
+        }
+    }
+
     val pictureOfDay: LiveData<PictureOfDay> = repository.pictureOfDay
 
     private val _navigateToDetails = MutableLiveData<Asteroid?>()
@@ -25,6 +34,7 @@ class MainViewModel(
         viewModelScope.launch {
             // Refresh asteroids and pictureOfTheDay on initialization
             getData()
+            showSavedAsteroids()
         }
     }
 
@@ -40,6 +50,24 @@ class MainViewModel(
 
     fun onAsteroidNavigated() {
         _navigateToDetails.value = null
+    }
+
+    fun showTodayAsteroids() {
+        _selectedOption.value = Options.TODAY
+    }
+
+    fun showSavedAsteroids() {
+        _selectedOption.value = Options.SAVED
+    }
+
+    fun showNextWeekAsteroids() {
+        _selectedOption.value = Options.NEXT_WEEK
+    }
+
+    enum class Options {
+        TODAY,
+        SAVED,
+        NEXT_WEEK
     }
 
 }

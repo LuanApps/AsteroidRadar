@@ -16,7 +16,9 @@ import java.util.*
 
 class NasaApiRepository(private val database: AsteroidDatabase) {
 
-    val asteroids: LiveData<List<Asteroid>> = database.asteroidDatabaseDao.getSortedAsteroids()
+    val asteroids: LiveData<List<Asteroid>> = database.asteroidDatabaseDao.getSavedAsteroids()
+    val todayAsteroids: LiveData<List<Asteroid>> = database.asteroidDatabaseDao.getTodayAsteroids()
+    val nextWeekAsteroids: LiveData<List<Asteroid>> = database.asteroidDatabaseDao.getNextWeekAsteroids()
     val pictureOfDay: LiveData<PictureOfDay> = database.pictureDatabaseDao.getLastPicture()
 
     suspend fun refreshAsteroids() {
@@ -24,7 +26,25 @@ class NasaApiRepository(private val database: AsteroidDatabase) {
             try {
 
                 val apiKey = Constants.APY_KEY
-                val response = NasaApi.nasaApiService.getAsteroids(getCurrentDate(), getEndDate(), apiKey)
+                val response = NasaApi.nasaApiService.getAsteroids(getCurrentDate(), getEndDate(getCurrentDate(), Constants.DEFAULT_END_DATE_DAYS), apiKey)
+                val jsonString = response.string()
+                val jsonObject = JSONObject(jsonString)
+                val asteroidsList = parseAsteroidsJsonResult(jsonObject)
+                if(asteroidsList.size > 0){
+                    database.asteroidDatabaseDao.clear()
+                }
+                database.asteroidDatabaseDao.insertAll(asteroidsList)
+            } catch (e: Exception) {
+                Log.e("repository", "Failed to refresh the asteroid data: $e")
+            }
+        }
+    }
+
+    suspend fun refreshNextWeekAsteroids() {
+        withContext(Dispatchers.IO) {
+            try {
+                val apiKey = Constants.APY_KEY
+                val response = NasaApi.nasaApiService.getAsteroids(getTomorrowDate(), getEndDate(getTomorrowDate(), Constants.DEFAULT_END_DATE_DAYS), apiKey)
                 val jsonString = response.string()
                 val jsonObject = JSONObject(jsonString)
                 val asteroidsList = parseAsteroidsJsonResult(jsonObject)
@@ -69,16 +89,23 @@ class NasaApiRepository(private val database: AsteroidDatabase) {
     }
 
     private fun getCurrentDate(): String {
+        val dateFormat = SimpleDateFormat(Constants.API_QUERY_DATE_FORMAT, Locale.getDefault())
         val currentDate = Calendar.getInstance().time
-        val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
         return dateFormat.format(currentDate)
     }
 
-    private fun getEndDate(): String {
+    private fun getTomorrowDate(): String {
+        val dateFormat = SimpleDateFormat(Constants.API_QUERY_DATE_FORMAT, Locale.getDefault())
         val calendar = Calendar.getInstance()
-        calendar.add(Calendar.DAY_OF_YEAR, 7) // Add 7 days to the current date
-        val endDate = calendar.time
-        val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-        return dateFormat.format(endDate)
+        calendar.add(Calendar.DAY_OF_YEAR, 1)
+        return dateFormat.format(calendar.time)
+    }
+
+    private fun getEndDate(startDate: String, daysToAdd: Int): String {
+        val dateFormat = SimpleDateFormat(Constants.API_QUERY_DATE_FORMAT, Locale.getDefault())
+        val calendar = Calendar.getInstance()
+        calendar.time = dateFormat.parse(startDate) as Date
+        calendar.add(Calendar.DATE, daysToAdd)
+        return dateFormat.format(calendar.time)
     }
 }

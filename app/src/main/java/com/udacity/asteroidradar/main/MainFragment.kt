@@ -109,15 +109,18 @@ class MainFragment : Fragment() {
             override fun onMenuItemSelected(menuItem: MenuItem): Boolean {
                 return when (menuItem.itemId) {
                     R.id.show_next_week_asteroids -> {
+                        viewModel.showNextWeekAsteroids()
                         true
                     }
                     R.id.show_today_asteroids -> {
+                        viewModel.showTodayAsteroids()
                         true
                     }
                     R.id.show_saved_asteroids -> {
+                        viewModel.showSavedAsteroids()
                         true
                     }
-                    else -> {true}
+                    else -> true
                 }
             }
         }, viewLifecycleOwner, Lifecycle.State.RESUMED)
